@@ -1,1 +1,955 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<title>서울시 에코마일리지 인센티브 상품 분석</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"맑은 고딕",sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+    padding:20px;
+}
+
+h1{
+    text-align:center;
+    color:#2c3e50;
+    margin-bottom:20px;
+}
+
+.container{
+    width:95%;
+    margin:auto;
+}
+
+.card-area{
+
+    display:grid;
+
+    grid-template-columns:
+    repeat(auto-fit,minmax(220px,1fr));
+
+    gap:20px;
+
+    margin-bottom:30px;
+
+}
+
+.card{
+
+    background:white;
+
+    border-radius:12px;
+
+    padding:20px;
+
+    box-shadow:0 3px 10px rgba(0,0,0,.1);
+
+    text-align:center;
+
+}
+
+.card h2{
+
+    font-size:17px;
+
+    color:#777;
+
+}
+
+.card p{
+
+    font-size:28px;
+
+    color:#3498db;
+
+    margin-top:15px;
+
+    font-weight:bold;
+
+}
+
+.control{
+
+    display:flex;
+
+    gap:15px;
+
+    flex-wrap:wrap;
+
+    margin-bottom:25px;
+
+}
+
+.control input{
+
+    flex:1;
+
+    padding:10px;
+
+}
+
+.control select{
+
+    padding:10px;
+
+}
+
+.control button{
+
+    padding:10px 18px;
+
+    cursor:pointer;
+
+    background:#3498db;
+
+    color:white;
+
+    border:none;
+
+    border-radius:8px;
+
+}
+
+.chart-grid{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:20px;
+
+}
+
+.chart-box{
+
+    background:white;
+
+    border-radius:12px;
+
+    padding:20px;
+
+    box-shadow:0 3px 10px rgba(0,0,0,.1);
+
+}
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    margin-top:30px;
+
+    background:white;
+
+}
+
+th{
+
+    background:#3498db;
+
+    color:white;
+
+}
+
+th,td{
+
+    border:1px solid #ddd;
+
+    padding:10px;
+
+    text-align:center;
+
+}
+
+tbody tr:hover{
+
+    background:#f2f2f2;
+
+}
+
+@media(max-width:900px){
+
+.chart-grid{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>
+
+서울시 에코마일리지 인센티브 상품 분석
+
+</h1>
+
+<div class="card-area">
+
+<div class="card">
+
+<h2>총 상품 수</h2>
+
+<p id="totalCount">0</p>
+
+</div>
+
+<div class="card">
+
+<h2>평균 가격</h2>
+
+<p id="avgPrice">0원</p>
+
+</div>
+
+<div class="card">
+
+<h2>최고가 상품</h2>
+
+<p id="maxPrice">0원</p>
+
+</div>
+
+<div class="card">
+
+<h2>브랜드 수</h2>
+
+<p id="brandCount">0</p>
+
+</div>
+
+</div>
+
+<div class="control">
+
+<input
+type="text"
+id="search"
+placeholder="상품명을 검색하세요">
+
+<select id="typeFilter">
+
+<option value="">전체 상품타입</option>
+
+</select>
+
+<button id="sortLow">
+
+가격 ↑
+
+</button>
+
+<button id="sortHigh">
+
+가격 ↓
+
+</button>
+
+</div>
+
+<div class="chart-grid">
+
+<div class="chart-box">
+
+<canvas id="typeChart"></canvas>
+
+</div>
+
+<div class="chart-box">
+
+<canvas id="brandChart"></canvas>
+
+</div>
+
+<div class="chart-box">
+
+<canvas id="deliveryChart"></canvas>
+
+</div>
+
+<div class="chart-box">
+
+<canvas id="priceChart"></canvas>
+
+</div>
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>상품명</th>
+
+<th>가격</th>
+
+<th>상품타입</th>
+
+<th>브랜드</th>
+
+<th>배송여부</th>
+
+</tr>
+
+</thead>
+
+<tbody id="tableBody">
+
+</tbody>
+
+</table>
+
+</div>
+
+<script>
+
+let data=[];
+
+let filtered=[];
+
+/* =========================
+
+2편에서 계속 작성
+
+CSV 불러오기
+
+데이터 분석
+
+카드 계산
+
+검색
+
+필터
+
+정렬
+
+표 생성
+
+========================= */
+
+</script>
+
+</body>
+</html>
+// ======================
+// CSV 파일 불러오기
+// ======================
+
+Papa.parse("서울시 에코마일리지 인센티브 상품 정보.csv",{
+
+    download:true,
+
+    header:true,
+
+    skipEmptyLines:true,
+
+    complete:function(result){
+
+        data=result.data;
+
+        filtered=[...data];
+
+        initialize();
+
+    }
+
+});
+
+// ======================
+// 초기화
+// ======================
+
+function initialize(){
+
+    makeCards();
+
+    makeFilter();
+
+    makeTable(filtered);
+
+    drawCharts();
+
+}
+
+// ======================
+// 가격 숫자로 변환
+// ======================
+
+function getPrice(value){
+
+    if(!value) return 0;
+
+    return Number(
+
+        value
+
+        .toString()
+
+        .replace(/,/g,"")
+
+        .replace(/원/g,"")
+
+        .replace(/[^\d]/g,"")
+
+    );
+
+}
+
+// ======================
+// 통계 카드
+// ======================
+
+function makeCards(){
+
+    document.getElementById("totalCount").innerText=data.length;
+
+    let prices=data.map(d=>getPrice(d["상품가격"]));
+
+    let avg=Math.round(
+
+        prices.reduce((a,b)=>a+b,0)
+
+        /prices.length
+
+    );
+
+    let max=Math.max(...prices);
+
+    document.getElementById("avgPrice").innerText=
+
+    avg.toLocaleString()+"원";
+
+    document.getElementById("maxPrice").innerText=
+
+    max.toLocaleString()+"원";
+
+    let brands=
+
+    new Set(
+
+        data.map(d=>d["브랜드/제조사 명칭"])
+
+    );
+
+    document.getElementById("brandCount").innerText=
+
+    brands.size;
+
+}
+
+// ======================
+// 필터 생성
+// ======================
+
+function makeFilter(){
+
+    let set=new Set();
+
+    data.forEach(d=>{
+
+        set.add(d["상품타입"]);
+
+    });
+
+    let select=document.getElementById("typeFilter");
+
+    [...set].sort().forEach(type=>{
+
+        let op=document.createElement("option");
+
+        op.value=type;
+
+        op.innerText=type;
+
+        select.appendChild(op);
+
+    });
+
+}
+
+// ======================
+// 테이블 출력
+// ======================
+
+function makeTable(list){
+
+    let tbody=document.getElementById("tableBody");
+
+    tbody.innerHTML="";
+
+    list.forEach(d=>{
+
+        tbody.innerHTML+=`
+
+<tr>
+
+<td>${d["상품명"]}</td>
+
+<td>${d["상품가격"]}</td>
+
+<td>${d["상품타입"]}</td>
+
+<td>${d["브랜드/제조사 명칭"]}</td>
+
+<td>${d["배송여부"]}</td>
+
+</tr>
+
+`;
+
+    });
+
+}
+
+// ======================
+// 검색
+// ======================
+
+document.getElementById("search")
+
+.addEventListener("keyup",filterData);
+
+// ======================
+// 타입 필터
+// ======================
+
+document.getElementById("typeFilter")
+
+.addEventListener("change",filterData);
+
+function filterData(){
+
+    let keyword=
+
+    document
+
+    .getElementById("search")
+
+    .value
+
+    .trim();
+
+    let type=
+
+    document
+
+    .getElementById("typeFilter")
+
+    .value;
+
+    filtered=data.filter(d=>{
+
+        let ok1=true;
+
+        let ok2=true;
+
+        if(keyword!=""){
+
+            ok1=d["상품명"]
+
+            .includes(keyword);
+
+        }
+
+        if(type!=""){
+
+            ok2=d["상품타입"]==type;
+
+        }
+
+        return ok1&&ok2;
+
+    });
+
+    makeTable(filtered);
+
+    drawCharts();
+
+}
+
+// ======================
+// 가격 오름차순
+// ======================
+
+document
+
+.getElementById("sortLow")
+
+.onclick=function(){
+
+    filtered.sort(
+
+    (a,b)=>
+
+    getPrice(a["상품가격"])
+
+    -
+
+    getPrice(b["상품가격"])
+
+    );
+
+    makeTable(filtered);
+
+};
+
+// ======================
+// 가격 내림차순
+// ======================
+
+document
+
+.getElementById("sortHigh")
+
+.onclick=function(){
+
+    filtered.sort(
+
+    (a,b)=>
+
+    getPrice(b["상품가격"])
+
+    -
+
+    getPrice(a["상품가격"])
+
+    );
+
+    makeTable(filtered);
+
+};
+// ===============================
+// Chart 객체
+// ===============================
+
+let typeChart;
+let brandChart;
+let deliveryChart;
+let priceChart;
+
+// ===============================
+// 차트 생성
+// ===============================
+
+function drawCharts(){
+
+    drawTypeChart();
+
+    drawBrandChart();
+
+    drawDeliveryChart();
+
+    drawPriceChart();
+
+}
+
+// ===============================
+// 상품타입별 그래프
+// ===============================
+
+function drawTypeChart(){
+
+    let count={};
+
+    filtered.forEach(item=>{
+
+        let key=item["상품타입"] || "기타";
+
+        count[key]=(count[key]||0)+1;
+
+    });
+
+    if(typeChart) typeChart.destroy();
+
+    typeChart=new Chart(
+
+        document.getElementById("typeChart"),
+
+        {
+
+            type:"bar",
+
+            data:{
+
+                labels:Object.keys(count),
+
+                datasets:[{
+
+                    label:"상품 개수",
+
+                    data:Object.values(count),
+
+                    backgroundColor:"#3498db"
+
+                }]
+
+            },
+
+            options:{
+
+                responsive:true,
+
+                plugins:{
+
+                    legend:{display:false}
+
+                }
+
+            }
+
+        }
+
+    );
+
+}
+
+// ===============================
+// 브랜드 TOP10
+// ===============================
+
+function drawBrandChart(){
+
+    let count={};
+
+    filtered.forEach(item=>{
+
+        let key=item["브랜드/제조사 명칭"] || "기타";
+
+        count[key]=(count[key]||0)+1;
+
+    });
+
+    let arr=Object.entries(count)
+
+        .sort((a,b)=>b[1]-a[1])
+
+        .slice(0,10);
+
+    if(brandChart) brandChart.destroy();
+
+    brandChart=new Chart(
+
+        document.getElementById("brandChart"),
+
+        {
+
+            type:"bar",
+
+            data:{
+
+                labels:arr.map(i=>i[0]),
+
+                datasets:[{
+
+                    label:"상품 수",
+
+                    data:arr.map(i=>i[1]),
+
+                    backgroundColor:"#2ecc71"
+
+                }]
+
+            },
+
+            options:{
+
+                responsive:true,
+
+                indexAxis:"y"
+
+            }
+
+        }
+
+    );
+
+}
+
+// ===============================
+// 배송여부 원그래프
+// ===============================
+
+function drawDeliveryChart(){
+
+    let count={};
+
+    filtered.forEach(item=>{
+
+        let key=item["배송여부"] || "기타";
+
+        count[key]=(count[key]||0)+1;
+
+    });
+
+    if(deliveryChart) deliveryChart.destroy();
+
+    deliveryChart=new Chart(
+
+        document.getElementById("deliveryChart"),
+
+        {
+
+            type:"pie",
+
+            data:{
+
+                labels:Object.keys(count),
+
+                datasets:[{
+
+                    data:Object.values(count)
+
+                }]
+
+            },
+
+            options:{
+
+                responsive:true
+
+            }
+
+        }
+
+    );
+
+}
+
+// ===============================
+// 가격 분포
+// ===============================
+
+function drawPriceChart(){
+
+    let bucket={
+
+        "1만원 이하":0,
+
+        "1~3만원":0,
+
+        "3~5만원":0,
+
+        "5~10만원":0,
+
+        "10만원 이상":0
+
+    };
+
+    filtered.forEach(item=>{
+
+        let p=getPrice(item["상품가격"]);
+
+        if(p<=10000){
+
+            bucket["1만원 이하"]++;
+
+        }
+
+        else if(p<=30000){
+
+            bucket["1~3만원"]++;
+
+        }
+
+        else if(p<=50000){
+
+            bucket["3~5만원"]++;
+
+        }
+
+        else if(p<=100000){
+
+            bucket["5~10만원"]++;
+
+        }
+
+        else{
+
+            bucket["10만원 이상"]++;
+
+        }
+
+    });
+
+    if(priceChart) priceChart.destroy();
+
+    priceChart=new Chart(
+
+        document.getElementById("priceChart"),
+
+        {
+
+            type:"bar",
+
+            data:{
+
+                labels:Object.keys(bucket),
+
+                datasets:[{
+
+                    label:"상품 수",
+
+                    data:Object.values(bucket),
+
+                    backgroundColor:"#f39c12"
+
+                }]
+
+            },
+
+            options:{
+
+                responsive:true,
+
+                plugins:{
+
+                    legend:{display:false}
+
+                }
+
+            }
+
+        }
+
+    );
+
+}
+
+// ===============================
+// 필터 적용 시 차트 갱신
+// ===============================
+
+function refresh(){
+
+    makeTable(filtered);
+
+    drawCharts();
+
+}
+
+document.getElementById("search").addEventListener("keyup",refresh);
+
+document.getElementById("typeFilter").addEventListener("change",refresh);
